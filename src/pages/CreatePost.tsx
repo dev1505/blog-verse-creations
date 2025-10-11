@@ -6,10 +6,10 @@ import { Navbar } from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft } from 'lucide-react';
+import MDEditor from '@uiw/react-md-editor';
 
 const CreatePost = () => {
   const { user } = useAuth();
@@ -17,6 +17,7 @@ const CreatePost = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [content, setContent] = useState('');
 
   if (!user) {
     navigate('/auth');
@@ -29,7 +30,6 @@ const CreatePost = () => {
 
     const formData = new FormData(e.currentTarget);
     const title = formData.get('title') as string;
-    const content = formData.get('content') as string;
     const tags = (formData.get('tags') as string).split(',').map(tag => tag.trim()).filter(Boolean);
 
     const excerpt = content.substring(0, 150).replace(/[#*`]/g, '') + '...';
@@ -100,14 +100,15 @@ const CreatePost = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="content">Content (Markdown supported)</Label>
-                <Textarea
-                  id="content"
-                  name="content"
-                  placeholder="Write your post content here... You can use Markdown formatting!"
-                  required
-                  className="min-h-[400px] font-mono"
-                />
+                <Label htmlFor="content">Content</Label>
+                <div data-color-mode="auto">
+                  <MDEditor
+                    value={content}
+                    onChange={(val) => setContent(val || '')}
+                    height={500}
+                    preview="edit"
+                  />
+                </div>
               </div>
 
               <div className="flex gap-3">
