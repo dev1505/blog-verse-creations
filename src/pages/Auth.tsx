@@ -24,7 +24,7 @@ const Auth = () => {
 
     const response = await login(email, password);
 
-    if (response?.success) {
+    if (response) {
       toast({
         title: 'Welcome back!',
         description: 'You have successfully logged in.',
@@ -46,7 +46,7 @@ const Auth = () => {
 
     const response = await signup(email, password, username);
 
-    if (response?.success) {
+    if (response) {
       toast({
         title: 'Account created!',
         description: 'Welcome to BlogSpace.',

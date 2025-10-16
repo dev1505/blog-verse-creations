@@ -4,6 +4,7 @@ import { BlogPost, useBlog } from '@/contexts/BlogContext';
 import { Navbar } from '@/components/Navbar';
 import { BlogCard } from '@/components/BlogCard';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { PenSquare } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
@@ -11,19 +12,17 @@ const MyPosts = () => {
   const { user } = useAuth();
   const { getBlogsByUser } = useBlog();
   const navigate = useNavigate();
-
-  // if (!user) {
-  //   navigate('/auth');
-  //   return null;
-  // }
-
   const [myPosts, setMyPosts] = useState<BlogPost[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
-      setMyPosts(await getBlogsByUser());
-    })()
-  }, [])
+      setIsLoading(true);
+      const blogs = await getBlogsByUser();
+      setMyPosts(blogs);
+      setIsLoading(false);
+    })();
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
@@ -44,14 +43,27 @@ const MyPosts = () => {
           </div>
         </div>
 
-        {myPosts?.length > 0 ? (
+        {isLoading ? (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 max-w-7xl mx-auto">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div key={index} className="space-y-3">
+                <Skeleton className="h-48 w-full" />
+                <Skeleton className="h-6 w-3/4" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-5/6" />
+              </div>
+            ))}
+          </div>
+        ) : myPosts?.length > 0 ? (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 max-w-7xl mx-auto">
             {myPosts.map((post) => (
-              <BlogCard key={post.id} post={post} />
+              <div key={post.id} className="animate-fade-in">
+                <BlogCard post={post} />
+              </div>
             ))}
           </div>
         ) : (
-          <div className="text-center py-12 max-w-md mx-auto">
+          <div className="text-center py-12 max-w-md mx-auto animate-fade-in">
             <h2 className="text-2xl font-semibold mb-4">No posts yet</h2>
             <p className="text-muted-foreground mb-6">
               Start sharing your thoughts and ideas with the world!

@@ -1,6 +1,7 @@
 import { Navbar } from '@/components/Navbar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { BlogPost, useBlog } from '@/contexts/BlogContext';
 import MDEditor from '@uiw/react-md-editor';
 import 'highlight.js/styles/github-dark.css';
@@ -22,17 +23,44 @@ const PostDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { getBlogById } = useBlog();
-  const [post, setPost] = useState<BlogPost>()
+  const [post, setPost] = useState<BlogPost>();
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (id) {
       (async () => {
-        const response = await getBlogById(id)
-        setPost(response)
-      })()
+        setIsLoading(true);
+        const response = await getBlogById(id);
+        setPost(response);
+        setIsLoading(false);
+      })();
     }
-  }, [])
+  }, [id]);
 
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <main className="container mx-auto px-4 py-8 max-w-4xl">
+          <Skeleton className="h-10 w-24 mb-6" />
+          <div className="space-y-4">
+            <Skeleton className="h-8 w-32" />
+            <Skeleton className="h-12 w-3/4" />
+            <div className="flex gap-4">
+              <Skeleton className="h-10 w-10 rounded-full" />
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-4 w-24" />
+              </div>
+            </div>
+            <Skeleton className="h-64 w-full" />
+            <Skeleton className="h-32 w-full" />
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   if (!post) {
     return (
@@ -78,7 +106,7 @@ const PostDetail = () => {
           </Button>}
         </div>
 
-        <article className="prose prose-lg dark:prose-invert max-w-none">
+        <article className="prose prose-lg dark:prose-invert max-w-none animate-fade-in">
           <div className="mb-8">
             <div className="flex flex-wrap gap-2 mb-4">
               <Badge variant="secondary">

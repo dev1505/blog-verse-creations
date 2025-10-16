@@ -1,16 +1,21 @@
 import { Navbar } from '@/components/Navbar';
 import { BlogCard } from '@/components/BlogCard';
 import { getAllBlogs, useBlog } from '@/contexts/BlogContext';
-import { useEffect } from 'react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useEffect, useState } from 'react';
 
 const Home = () => {
   const { posts, setPosts } = useBlog();
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
-      setPosts(await getAllBlogs())
-    })()
-  }, [])
+      setIsLoading(true);
+      const blogs = await getAllBlogs();
+      setPosts(blogs);
+      setIsLoading(false);
+    })();
+  }, []);
 
 
   return (
@@ -26,10 +31,21 @@ const Home = () => {
           </p>
         </div>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 max-w-7xl mx-auto">
-          {(posts && posts?.length) ? posts.map((post, index) => (
-            <BlogCard key={index} post={post} />
+          {isLoading ? (
+            Array.from({ length: 6 }).map((_, index) => (
+              <div key={index} className="space-y-3">
+                <Skeleton className="h-48 w-full" />
+                <Skeleton className="h-6 w-3/4" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-5/6" />
+              </div>
+            ))
+          ) : (posts && posts?.length) ? posts.map((post, index) => (
+            <div key={index} className="animate-fade-in">
+              <BlogCard post={post} />
+            </div>
           )) : (
-            <div className="text-center py-12">
+            <div className="text-center py-12 col-span-full">
               <p className="text-muted-foreground">No posts yet. Be the first to write!</p>
             </div>
           )}

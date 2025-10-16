@@ -3,10 +3,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Skeleton } from '@/components/ui/skeleton';
 import { BlogPost, useBlog } from '@/contexts/BlogContext';
 import { useToast } from '@/hooks/use-toast';
 import MDEditor from '@uiw/react-md-editor';
-import { ArrowLeft, Sparkles } from 'lucide-react';
+import { ArrowLeft, Sparkles, Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import NotFound from './NotFound';
@@ -18,24 +19,33 @@ const CreatePost = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isLoadingPost, setIsLoadingPost] = useState(true);
 
   const { id } = useParams();
-  const [post, setPost] = useState<BlogPost>()
+  const [post, setPost] = useState<BlogPost>();
 
   useEffect(() => {
-    if (id) {
-      (async () => {
-        const response = await getBlogById(id || '')
+    (async () => {
+      setIsLoadingPost(true);
+      if (id) {
+        const response = await getBlogById(id || '');
         setPost(response);
-      })()
-    }
-    else {
-      (async () => {
-        const response = await me()
-        setPost({ ...post, user: response })
-      })()
-    }
-  }, [])
+      } else {
+        const response = await me();
+        setPost({ 
+          title: '', 
+          content: '', 
+          hashtags: '', 
+          user: { 
+            username: response?.username || '', 
+            email: response?.email || '' 
+          } 
+        } as BlogPost);
+      }
+      setIsLoadingPost(false);
+    })();
+  }, [id]);
 
   if (id && !post) {
     return (<NotFound />)
@@ -117,29 +127,80 @@ const CreatePost = () => {
     }
   };
 
-  const handleGenerateContent = () => {
-    const title = document.getElementById("title").value;
-    const hashtags = document.getElementById("hashtags").value;
+  const handleGenerateContent = async () => {
+    const title = (document.getElementById("title") as HTMLInputElement)?.value;
+    const hashtags = (document.getElementById("hashtags") as HTMLInputElement)?.value;
+    
     if (!title) {
       toast({
         title: 'Add Field',
         description: 'Please add Title and Tags to generate content relative to the topic',
         toastType: 'warning',
       });
+      return;
     }
-    else if (!hashtags) {
+    if (!hashtags) {
       toast({
         title: 'Add Field',
         description: 'Please add Tags to generate content relative to the topic',
         toastType: 'warning',
       });
+      return;
     }
-    else {
-      (async () => {
-        const response = await generateBlog({ title: title, hashtags: hashtags, user: post.user })
-        setPost({ ...response })
-      })()
+
+    try {
+      setIsGenerating(true);
+      toast({
+        title: 'Generating content...',
+        description: 'AI is crafting your blog post',
+        toastType: 'info',
+      });
+      const response = await generateBlog({ title, hashtags, user: post.user });
+      setPost({ ...response });
+      toast({
+        title: 'Content generated!',
+        description: 'Your AI-generated blog is ready to review',
+        toastType: 'success',
+      });
+    } catch (error) {
+      toast({
+        title: 'Generation failed',
+        description: 'Failed to generate content. Please try again.',
+        toastType: 'error',
+      });
+    } finally {
+      setIsGenerating(false);
     }
+  };
+
+  if (isLoadingPost) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <main className="container mx-auto px-4 py-8 max-w-4xl">
+          <Skeleton className="h-10 w-24 mb-6" />
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-8 w-48" />
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-16" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-64 w-full" />
+              </div>
+            </CardContent>
+          </Card>
+        </main>
+      </div>
+    );
   }
 
   return (
@@ -159,11 +220,21 @@ const CreatePost = () => {
           <Button
             variant="ghost"
             size="sm"
-            className="mb-6 bg-blue-200"
-            onClick={() => handleGenerateContent()}
+            className="mb-6 bg-primary/10 hover:bg-primary/20 animate-pulse-glow"
+            onClick={handleGenerateContent}
+            disabled={isGenerating}
           >
-            <Sparkles />
-            Generate From AI
+            {isGenerating ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <Sparkles className="mr-2 h-4 w-4" />
+                Generate From AI
+              </>
+            )}
           </Button>
         </div>
 
@@ -199,7 +270,7 @@ const CreatePost = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="content">Content</Label>
-                <div data-color-mode="auto">
+                <div data-color-mode="auto" className={isGenerating ? 'animate-pulse-glow' : ''}>
                   <MDEditor
                     value={post?.content}
                     onChange={(val) => setPost({ ...post, content: val || '' })}
