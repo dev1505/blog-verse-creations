@@ -1,16 +1,19 @@
+import { CommonApiCall, fastapi_backend_url } from '@/commonFunctions';
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 interface User {
-  id: string;
+  id?: string;
   email: string;
-  name: string;
+  username?: string;
+  password: string;
 }
 
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<boolean>;
   signup: (email: string, password: string, name: string) => Promise<boolean>;
-  logout: () => void;
+  logout: () => Promise<boolean>;
+  me: () => Promise<User>;
   isLoading: boolean;
 }
 
@@ -37,42 +40,40 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
-    // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 500));
-    
-    const mockUser: User = {
-      id: '1',
-      email,
-      name: email.split('@')[0],
-    };
-    
+    const mockUser: User = { email, password };
     setUser(mockUser);
-    localStorage.setItem('blog_user', JSON.stringify(mockUser));
-    return true;
+    const response = await CommonApiCall({ url: fastapi_backend_url + "/login", type: "post", payload: mockUser })
+    return response;
   };
 
-  const signup = async (email: string, password: string, name: string): Promise<boolean> => {
-    // Simulate API call
+  const signup = async (email: string, password: string, username: string): Promise<boolean> => {
     await new Promise(resolve => setTimeout(resolve, 500));
-    
     const mockUser: User = {
       id: Date.now().toString(),
       email,
-      name,
+      username,
+      password
     };
-    
+
     setUser(mockUser);
-    localStorage.setItem('blog_user', JSON.stringify(mockUser));
-    return true;
+    const response = await CommonApiCall({ url: fastapi_backend_url + "/register", type: "post", payload: mockUser })
+    return response;
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('blog_user');
+  const me = async (): Promise<User> => {
+    const response = await CommonApiCall({ url: fastapi_backend_url + "/get/user", type: "get" })
+    setUser(response?.data)
+    return response?.data;
+  };
+
+  const logout = async () => {
+    const response = await CommonApiCall({ url: fastapi_backend_url + "/logout", type: "get" })
+    return response?.success;
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, signup, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, login, signup, logout, isLoading, me }}>
       {children}
     </AuthContext.Provider>
   );
